@@ -16,16 +16,16 @@ var connection = mysql.createConnection({
 connection.connect(function (err) {
     if (err) throw err;
     console.log("Connected as ID " + connection.threadId);
-    welcometoBamazon();
+    welcome();
 });
 
 //========= Welcome to Bamazon ==========
 //---------------------------------
-function welcometoBamazon() {
+function welcome() {
     inquirer.prompt([{
         type: "confirm",
         name: "confirmation",
-        message: "Would you like to view our inventory?",
+        message: "Welcome to Bamazon! Would you like to view our inventory?",
         default: true
 
     }]).then(function (user) {
@@ -76,12 +76,12 @@ function inventory() {
 function purchasePrompt() {
     inquirer.prompt([{
         type: "confirm",
-        name: "purchaseInput",
+        name: "purchase",
         message: "Would you like to make a purchase?",
         default: true
 
     }]).then (function (user) {
-        if (user.purchaseInput === true) {
+        if (user.purchase === true) {
             itemSelect();
         } else {
             console.log("\n =================================================\n");
@@ -107,21 +107,21 @@ function itemSelect() {
             message: "How many of this item would you like to purchase?"
         }
 
-    ]).then (function (purchaseItem) {
+    ]).then (function (userPurchase) {
 
         // ---------- Connect to bamazonDB and query stock_quantity ----------
 
-        connection.query("SELECT * FROM products WHERE item_id=?", purchaseItem.inputId, function (err, res) {
+        connection.query("SELECT * FROM products WHERE item_id=?", userPurchase.inputId, function (err, res) {
             for (var i = 0; i < res.length; i++) {
-                if (purchaseItem.inputQuantity > res[i].stock_quantity) {
+                if (userPurchase.inputQuantity > res[i].stock_quantity) {
                     console.log("======================================================================");
-                    console.log("\n === Sorry! We currently do not have " + purchaseItem.inputQuantity + " of this item in stock === \n");
+                    console.log("\n === Sorry! We currently do not have " + userPurchase.inputQuantity + " of this item in stock === \n");
 
-                    welcometoBamazon();
+                    welcome();
 
                 } else {
                     console.log("\n ========================================================================= \n");
-                    console.log("Thank you for your purchase!");
+                    console.log("We have your order in stock!");
                     console.log("\n ------------------------------------------ \n");
                     console.log("Your order for " + res[i].product_name + " has been placed");
                     console.log("You may review your order below:");
@@ -129,15 +129,16 @@ function itemSelect() {
                     console.log("Item: " + res[i].product_name);
                     console.log("Department: " + res[i].department_name);
                     console.log("Price: " + res[i].price);
-                    console.log("Quantity Ordered: " + purchaseItem.inputQuantity);
+                    console.log("Quantity Ordered: " + userPurchase.inputQuantity);
                     console.log("---------------------------------------------------------------\n");
-                    console.log("Total: " + res[i].price * purchaseItem.quantity);
+                    console.log("Total: " + res[i].price * userPurchase.inputQuantity);
+                    console.log("=============================================================");
 
                     // Define a variable named 'updateStock' which will be the stock on hand minus the amount ordered
-                    var updateStock = (res[i].stock_quantity - purchaseItem.inputQuantity);
-                    var purchaseId = (purchaseItem.inputId);
+                    var updateStock = (res[i].stock_quantity - userPurchase.inputQuantity);
+                    var purchaseId = (userPurchase.inputId);
 
-                    orderConfirmation(updateStock, purchaseId);
+                    orderConfirm(updateStock, purchaseId);
                 }
             }
         });
@@ -146,16 +147,16 @@ function itemSelect() {
 
 //========== Order Confirmation ==========
 
-function orderConfirmation(updateStock, purchaseId) {
+function orderConfirm(updateStock, purchaseId) {
     inquirer.prompt([{
 
         type: "confirm",
-        name: "orderConfirmed",
+        name: "confirmPurchase",
         message: "Are you sure you want to place this order?",
         default: true
 
-    }]).then(function (confirmationReceived) {
-        if (confirmationReceived.orderConfirmation === true) {
+    }]).then(function (userConfirm) {
+        if (userConfirm.confirmPurchase === true) {
             connection.query("UPDATE products SET ? WHERE ?", [{
                         stock_quantity: updateStock
                     },
@@ -170,13 +171,13 @@ function orderConfirmation(updateStock, purchaseId) {
             console.log("Your transaction has been completed. Thank you for your order!");
             console.log("\n ==================================================");
 
-            welcometoBamazon();
+            welcome();
         } else {
             console.log("================================================== \n");
             console.log("You have canceled this order. You will not be charged");
             console.log("\n ==================================================");
 
-            welcometoBamazon();
+            welcome();
         }
     });
 }
